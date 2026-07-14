@@ -63,7 +63,25 @@ if __name__ == "__main__":
 
     unmatched_2016 = lp_codes - codes_2016
     log(f"2016 4Q 기준 미매칭 잔여: {len(unmatched_2016)}건")
-    log("\n결론: bnd_oa_11_2016_4Q를 생활인구 공간 조인의 공식 기준 경계로 채택 (100% 매칭).")
+
+    # 코드 집합이 겹치는 수준을 넘어, 실제 행 단위 1:1 배정이 되는지 엄격하게 검증
+    log("\n===== 1:1 관계 엄격 검증 (merge validate) =====")
+    lp_dup = lp["집계구코드"].duplicated().sum()
+    gdf_2016 = gpd.read_file("data/raw/bnd_oa_11_2016_4Q/bnd_oa_11_2016_4Q.shp")
+    oa_dup = gdf_2016["TOT_REG_CD"].astype(str).duplicated().sum()
+    log(f"생활인구 집계구코드 중복 행: {lp_dup}건, 2016 경계 TOT_REG_CD 중복 행: {oa_dup}건")
+
+    lp_str = lp.assign(집계구코드=lp["집계구코드"].astype(str))
+    gdf_str = gdf_2016.assign(TOT_REG_CD=gdf_2016["TOT_REG_CD"].astype(str))
+    merged = lp_str.merge(
+        gdf_str[["TOT_REG_CD", "geometry"]],
+        left_on="집계구코드", right_on="TOT_REG_CD",
+        how="outer", validate="one_to_one", indicator=True,
+    )
+    log(f"merge(validate='one_to_one') 성공 -> 순수 1:1 관계 확인됨")
+    log(merged["_merge"].value_counts().to_string())
+
+    log("\n결론: bnd_oa_11_2016_4Q를 생활인구 공간 조인의 공식 기준 경계로 채택 (100% 매칭, 행 단위 1:1 확인).")
     log("BND_TOTAL_OA_PG(2024)는 생활인구 조인에는 더 이상 사용하지 않음.")
 
     os.makedirs("outputs", exist_ok=True)

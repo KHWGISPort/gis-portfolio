@@ -38,3 +38,20 @@ def points_from_lonlat(df: pd.DataFrame, lon_col: str, lat_col: str, source_crs=
     geometry = [Point(xy) for xy in zip(valid[lon_col], valid[lat_col])]
     gdf = gpd.GeoDataFrame(valid, geometry=geometry, crs=source_crs)
     return gdf.to_crs(TARGET_CRS)
+
+
+def build_seoul_boundary(buffer_m=0):
+    """
+    서울 경계(폴리곤 하나)를 만든다.
+    BND_ADM_DONG_PG(전국 행정동 경계)에서 ADM_CD가 '11'(서울 시도코드)로
+    시작하는 행만 모아 하나로 합친다(union). 좌표계는 5179로 통일.
+
+    buffer_m > 0 이면 여유 공간을 준 버전을 반환한다
+    (예: 좌표 오류 판정 시 경계선에 딱 걸친 점까지 억울하게 걸러지는 것을 방지).
+    """
+    gdf = load_shp_as_5179("data/raw/BND_ADM_DONG_PG/BND_ADM_DONG_PG.shp")
+    seoul = gdf[gdf["ADM_CD"].astype(str).str.startswith("11")]
+    boundary = seoul.union_all()
+    if buffer_m:
+        boundary = boundary.buffer(buffer_m)
+    return boundary

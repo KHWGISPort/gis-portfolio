@@ -17,6 +17,7 @@ import geopandas as gpd
 import pandas as pd
 
 from utils_geo import load_shp_as_5179, points_from_lonlat, TARGET_CRS
+from utils_geo import build_seoul_boundary as _build_seoul_boundary
 
 report = io.StringIO()
 
@@ -28,17 +29,12 @@ def log(text=""):
 
 def build_seoul_boundary():
     """
-    서울 경계(폴리곤 하나)를 만든다.
-    BND_ADM_DONG_PG(전국 행정동 경계)에서 ADM_CD가 '11'(서울 시도코드)로
-    시작하는 행만 모아 하나로 합친다(union). 좌표계는 5179로 통일.
-
-    좌표 오류 판정 시, 딱 경계선에 걸친 점까지 억울하게 걸러지는 것을
-    막기 위해 200m 버퍼(여유 공간)를 준다.
+    서울 경계(원본 그대로)와 200m 버퍼를 준 버전을 함께 반환한다.
+    (좌표 오류 판정 시, 딱 경계선에 걸친 점까지 억울하게 걸러지는 것을 막기 위해
+    버퍼 버전이 필요함. 실제 경계 생성 로직은 utils_geo.build_seoul_boundary 재사용.)
     """
-    gdf = load_shp_as_5179("data/raw/BND_ADM_DONG_PG/BND_ADM_DONG_PG.shp")
-    seoul = gdf[gdf["ADM_CD"].astype(str).str.startswith("11")]
-    boundary = seoul.union_all()
-    boundary_buffered = boundary.buffer(200)  # 200m 여유
+    boundary = _build_seoul_boundary()
+    boundary_buffered = _build_seoul_boundary(buffer_m=200)
     return boundary, boundary_buffered
 
 

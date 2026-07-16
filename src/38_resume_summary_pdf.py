@@ -11,6 +11,11 @@
   - 지표는 반드시 '의미'와 함께 (예: 적중률 46.4% = 무작위 대비 2.3배)
   - AI 활용을 정직하게 명시하되 '나의 판단' 역할을 분명히
 
+[2차 개선 반영, 사용자 피드백]
+  - 1페이지 하단 여백 제거: 지도를 키우고 '무엇을·왜'를 1페이지로 끌어올려 첫 장을 완결
+  - '검증된 자리(초록) 145곳'을 결과에 추가 → 신규 후보(빨강)의 신뢰 근거
+  - 8위 '진입 불가'를 위양성과 다른 색+각주로 구분 (모델은 적중, 현실 제약)
+
 한글은 맑은 고딕 TTF를 PDF에 임베드해서, 어떤 뷰어에서도 글자가 보이게 한다.
 """
 import os
@@ -35,8 +40,10 @@ NAVY = colors.HexColor("#1a2b4a")
 RED = colors.HexColor("#c62828")
 GREEN = colors.HexColor("#2e7d32")
 AMBER = colors.HexColor("#d97706")
+SLATE = colors.HexColor("#3b6ea5")   # '진입 불가'(모델은 적중, 현실 제약) 전용 색 — 위양성(빨강)과 구분
 GRAY = colors.HexColor("#555555")
 LIGHT = colors.HexColor("#f4f6fa")
+GREENBG = colors.HexColor("#eef6ee")
 LINE = colors.HexColor("#cccccc")
 
 S = {
@@ -50,6 +57,7 @@ S = {
     "statlbl": ParagraphStyle("sl", fontName=FB, fontSize=8, leading=10.5, textColor=GRAY, alignment=TA_CENTER),
     "cap": ParagraphStyle("c", fontName=FB, fontSize=8, leading=11, textColor=GRAY, alignment=TA_CENTER),
     "small": ParagraphStyle("sms", fontName=FB, fontSize=8, leading=11, textColor=GRAY),
+    "valid": ParagraphStyle("v", fontName=FB, fontSize=9.3, leading=13.5, textColor=colors.HexColor("#1a1a1a")),
     "foot": ParagraphStyle("f", fontName=FH, fontSize=10, leading=13, textColor=NAVY, alignment=TA_CENTER),
 }
 
@@ -65,15 +73,12 @@ def summary_box():
         "<b>539개 후보지</b>를 도출한 뒤, <b>상위 후보 5곳을 직접 답사</b>해 모델이 맞힌 것과 놓친 것을 규명했습니다. "
         "핵심은 점수를 내는 데서 그치지 않고, <b>그 점수가 현장에서 성립하는지까지 확인했다</b>는 점입니다."
     )
-    inner = Paragraph(txt, S["summary"])
-    t = Table([[inner]], colWidths=[171 * mm])
+    t = Table([[Paragraph(txt, S["summary"])]], colWidths=[171 * mm])
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), LIGHT),
         ("LINEBEFORE", (0, 0), (0, -1), 3, RED),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
     ]))
     return t
 
@@ -92,12 +97,24 @@ def stats_row():
     t = Table([cells], colWidths=[42.75 * mm] * 4)
     t.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
-        ("LINEBELOW", (0, 0), (-1, -1), 0, colors.white),
-        ("BOX", (0, 0), (-1, -1), 0.5, LINE),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, LINE),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("BOX", (0, 0), (-1, -1), 0.5, LINE), ("INNERGRID", (0, 0), (-1, -1), 0.5, LINE),
+        ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    return t
+
+
+def validation_line():
+    """검증된 자리(초록 145곳)를 모델 타당성 근거로 제시 — 신규 후보(빨강)의 신뢰 근거."""
+    txt = (
+        "<b>모델 타당성 검증</b> &nbsp;—&nbsp; 실제 편의점이 영업 중인 우량 자리 <b>145곳(지도의 초록)을 모델도 "
+        "'고득점'으로 재현</b>했습니다. 모델이 '좋은 입지'를 제대로 학습했으며, 신규 후보(빨강)를 신뢰할 수 있다는 근거입니다."
+    )
+    t = Table([[Paragraph(txt, S["valid"])]], colWidths=[171 * mm])
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), GREENBG),
+        ("LINEBEFORE", (0, 0), (0, -1), 3, GREEN),
+        ("TOPPADDING", (0, 0), (-1, -1), 7), ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
     ]))
     return t
 
@@ -126,7 +143,6 @@ def pipeline_row():
 
 
 def metric_row():
-    """지표를 '의미'와 함께 3칸 카드로."""
     def card(big, name, mean):
         return [
             Paragraph(big, ParagraphStyle("mb", fontName=FH, fontSize=15, leading=17, textColor=NAVY, alignment=TA_CENTER)),
@@ -143,20 +159,41 @@ def metric_row():
     t.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("BACKGROUND", (0, 0), (-1, -1), LIGHT),
-        ("BOX", (0, 0), (-1, -1), 0.5, LINE),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, LINE),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-        ("LEFTPADDING", (0, 0), (-1, -1), 7),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+        ("BOX", (0, 0), (-1, -1), 0.5, LINE), ("INNERGRID", (0, 0), (-1, -1), 0.5, LINE),
+        ("TOPPADDING", (0, 0), (-1, -1), 7), ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("LEFTPADDING", (0, 0), (-1, -1), 7), ("RIGHTPADDING", (0, 0), (-1, -1), 7),
     ]))
+    return t
+
+
+def compare_table():
+    """v1->v3a 개선 과정 — 방법론적 실험/진단 역량을 보여주는 표."""
+    data = [
+        ["버전", "타깃 · 피처", "순위 일치도", "상위권 적중률"],
+        ["v1", "총매출 · 기본 10피처", "0.268", "46.4%"],
+        ["v2", "점포당매출 · 집객시설 추가 12피처", "0.242", "28.6%"],
+        ["v3a (최종)", "총매출 · 집객시설 추가 12피처", "0.312", "46.4%"],
+    ]
+    t = Table(data, colWidths=[24 * mm, 87 * mm, 30 * mm, 30 * mm])
+    style = [
+        ("FONTNAME", (0, 0), (-1, -1), FB),
+        ("FONTNAME", (0, 0), (-1, 0), FH), ("FONTNAME", (0, 3), (-1, 3), FH),
+        ("FONTSIZE", (0, 0), (-1, -1), 8.6),
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND", (0, 3), (-1, 3), colors.HexColor("#eaf0f6")),
+        ("GRID", (0, 0), (-1, -1), 0.4, LINE),
+        ("ALIGN", (2, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+    ]
+    t.setStyle(TableStyle(style))
     return t
 
 
 VERDICT = [
     ("1위", "상봉역", "적중", GREEN, "지하철 개찰구 밖 무점포 확인, 낮·저녁 이중 유동인구"),
     ("3위", "타임호프", "조건부 적중", AMBER, "고령층 근린 상권, 무인마트의 취급 공백이 오히려 기회"),
-    ("8위", "먹자골목", "진입 불가", GRAY, "수요는 확실하나 빈 점포 없음(위반건축물 5건이 방증)"),
+    ("8위", "먹자골목", "진입 불가*", SLATE, "수요는 확실하나 빈 점포 없음(위반건축물 5건이 방증)"),
     ("2위", "금강사거리", "위양성", RED, "초등학교발 생활인구 착시, 현장 유동 거의 없음"),
     ("9위", "진로아파트", "위양성", RED, "격자가 순수 아파트 단지 내부 → 물리적 설치 불가"),
 ]
@@ -164,22 +201,15 @@ VERDICT = [
 
 def verdict_table():
     header = ["순위", "장소", "판정", "현장에서 확인한 근거"]
-    data = [header]
-    for rank, place, verdict, _, reason in VERDICT:
-        data.append([rank, place, verdict, reason])
-    t = Table(data, colWidths=[12 * mm, 25 * mm, 26 * mm, 108 * mm])
+    data = [header] + [[r, p, v, reason] for r, p, v, _, reason in VERDICT]
+    t = Table(data, colWidths=[12 * mm, 25 * mm, 27 * mm, 107 * mm])
     style = [
-        ("FONTNAME", (0, 0), (-1, -1), FB),
-        ("FONTNAME", (0, 0), (-1, 0), FH),
-        ("FONTNAME", (2, 1), (2, -1), FH),
+        ("FONTNAME", (0, 0), (-1, -1), FB), ("FONTNAME", (0, 0), (-1, 0), FH), ("FONTNAME", (2, 1), (2, -1), FH),
         ("FONTSIZE", (0, 0), (-1, -1), 8.8),
-        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT]),
-        ("GRID", (0, 0), (-1, -1), 0.4, LINE),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 4.5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4.5),
+        ("GRID", (0, 0), (-1, -1), 0.4, LINE), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4.5), ("BOTTOMPADDING", (0, 0), (-1, -1), 4.5),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
     ]
     for i, (_, _, _, color, _) in enumerate(VERDICT, start=1):
@@ -194,11 +224,7 @@ def photo_pair():
     cap1 = Paragraph("<b>1위 상봉역 — 적중.</b> 초역세권이지만 개찰구 밖에 편의점이 없어 유동인구가 미포섭 상태였음.", S["cap"])
     cap2 = Paragraph("<b>9위 진로아파트 — 위양성.</b> 고득점 격자가 아파트 단지 내부였고, 실제로는 출점이 불가능했음.", S["cap"])
     t = Table([[p1, p2], [cap1, cap2]], colWidths=[85 * mm, 85 * mm])
-    t.setStyle(TableStyle([
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 1), (-1, 1), 3),
-    ]))
+    t.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 1), (-1, 1), 3)]))
     return t
 
 
@@ -209,40 +235,41 @@ if __name__ == "__main__":
                             leftMargin=19.5 * mm, rightMargin=19.5 * mm)
     st = []
 
-    # ===== 페이지 1: 한눈 요약 + 결과 =====
+    # ===== 페이지 1: 한눈 요약 + 결과 + 무엇을·왜 (첫 장에서 완결) =====
     st.append(Paragraph("편의점 최적입지 스코어링 및 현장 검증", S["title"]))
     st.append(Paragraph("서울 공공데이터 기반 · 중랑구 100m 격자 분석 · 개인 프로젝트", S["sub"]))
     st.append(Spacer(1, 8))
     st.append(summary_box())
-    st.append(Spacer(1, 11))
+    st.append(Spacer(1, 13))
 
     st.append(h2("프로젝트 결과"))
-    hero = Image("outputs/36_readme_hero_map.png", width=95 * mm, height=95 * mm)
+    # 제목·범례 없는 컴팩트 지도를 원본 비율(세로/가로 1.297) 그대로 삽입 — 왜곡 방지 (범례는 아래 캡션이 담당)
+    _hw = 92 * mm
+    hero = Image("outputs/36_hero_for_pdf.png", width=_hw, height=_hw * 1.297)
     hero.hAlign = "CENTER"
     st.append(hero)
     st.append(Paragraph(
-        "중랑구 1,858개 격자 스코어링 결과. 빨강=신규 후보지(고득점·무점포), 초록=검증된 자리(고득점·기존점포), "
-        "갈색=출점불가(건물·상가 없음).", S["cap"]))
-    st.append(Spacer(1, 8))
+        "중랑구 1,858개 격자 스코어링. 빨강=신규 후보지(고득점·무점포), 초록=검증된 자리(고득점·기존점포), 갈색=출점불가.",
+        S["cap"]))
+    st.append(Spacer(1, 9))
     st.append(stats_row())
+    st.append(Spacer(1, 9))
+    st.append(validation_line())
+    st.append(Spacer(1, 15))
 
-    st.append(PageBreak())
-
-    # ===== 페이지 2: 문제 & 접근 + 방법 =====
     st.append(h2("무엇을, 왜"))
     st.append(Paragraph(
         "입지 분석·선정에서는 늘 <b>'어떤 요인에 얼마의 가중치를 줄 것인가'</b>를 정하는 일이 중요한 과제입니다. "
         "이 프로젝트는 그 과제를 <b>가중치를 데이터로 직접 학습</b>하는 방식으로 풀어보고자 시작했습니다. "
-        "사람이 임의로 정한 가중치 대신, 서울 전체 편의점 매출이 실제로 어떤 입지 요인과 함께 움직이는지를 "
-        "머신러닝으로 학습시켰습니다.", S["bodysp"]))
-    st.append(Paragraph(
         "다만 목표는 <b>'매출 금액을 정확히 맞히는 예측'이 아니라, '어느 자리가 상대적으로 더 유망한가'를 줄 세우는 "
         "스코어링</b>입니다. 그래서 평가지표도 절대 오차가 아니라 <b>순위 일치도</b>를 중심에 두었습니다.", S["body"]))
-    st.append(Spacer(1, 10))
 
+    st.append(PageBreak())
+
+    # ===== 페이지 2: 어떻게 했나 + 모델 성능(의미+개선 과정) =====
     st.append(h2("어떻게 했나"))
     st.append(pipeline_row())
-    st.append(Spacer(1, 7))
+    st.append(Spacer(1, 8))
     st.append(Paragraph(
         "· <b>데이터</b>: 서울열린데이터광장·소상공인시장진흥공단·국가데이터처의 공공데이터 9종과, 유동인구 결합의 "
         "정확도를 위해 SGIS(통계지리정보서비스)의 승인 집계구 경계를 추가로 확보해 사용.", S["bodysp"]))
@@ -252,21 +279,32 @@ if __name__ == "__main__":
     st.append(Paragraph(
         "· <b>출점불가 마스킹</b>: 건물과 상가가 모두 없는 격자(도로·하천·산지·공원)를 걸러, 점수가 높아도 "
         "실제로는 출점이 불가능한 곳을 후보에서 제외.", S["body"]))
-    st.append(Spacer(1, 10))
+    st.append(Spacer(1, 13))
 
     st.append(h2("모델 성능 — 숫자의 의미"))
     st.append(metric_row())
+    st.append(Spacer(1, 13))
+
+    st.append(h2("모델을 3번 고쳐 만든 최종안"))
+    st.append(Paragraph(
+        "타깃(무엇을 예측할지)과 피처를 <b>하나씩 분리해 실험</b>했습니다. 성능이 떨어진 버전(v2)을 그냥 버리지 않고 "
+        "원인을 진단해, '점포당 매출로 타깃을 바꾼 것'이 문제였고 '집객시설 피처 추가'는 도움이 됐음을 밝혀 최적 조합(v3a)을 확정했습니다.",
+        S["bodysp"]))
+    st.append(compare_table())
 
     st.append(PageBreak())
 
-    # ===== 페이지 3: 검증 + 성장 =====
+    # ===== 페이지 3: 현장 검증 + 통찰 + 성장 =====
     st.append(h2("현장 검증: 모델을 직접 걸어서 확인하다"))
-    st.append(Paragraph(
-        "상위 후보 10곳 중 5곳을 직접 답사해, 모델의 판단과 현장을 대조했습니다.", S["bodysp"]))
+    st.append(Paragraph("상위 후보 10곳 중 5곳을 직접 답사해, 모델의 판단과 현장을 대조했습니다.", S["bodysp"]))
     st.append(verdict_table())
+    st.append(Spacer(1, 3))
+    st.append(Paragraph(
+        "* <b>8위 '진입 불가'는 모델 오류가 아닙니다.</b> 모델 점수는 정확했으나(수요 있음) 빈 점포가 없어 실제 진입만 불가한 경우로, "
+        "모델이 틀린 <b>위양성(2·9위)과는 구분</b>됩니다.", S["small"]))
     st.append(Spacer(1, 8))
     st.append(photo_pair())
-    st.append(Spacer(1, 9))
+    st.append(Spacer(1, 10))
 
     st.append(h2("핵심 통찰 — 한계를 현장으로 규명하다"))
     st.append(Paragraph(

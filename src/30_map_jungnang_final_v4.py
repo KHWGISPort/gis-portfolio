@@ -71,12 +71,6 @@ if __name__ == "__main__":
         ).add_to(store_layer)
     store_layer.add_to(m)
 
-    folium.Marker(
-        location=[dongbu_centroid.y, dongbu_centroid.x],
-        popup="중랑동부시장 (면목2동, 현장 검증 대상지)",
-        icon=folium.Icon(color="purple", icon="star"),
-    ).add_to(m)
-
     legend_html = """
     <div style="position: fixed; bottom: 30px; left: 30px; z-index:9999;
                 background-color: white; padding: 10px; border: 1px solid #999;
@@ -87,7 +81,6 @@ if __name__ == "__main__":
       <span style="color:#377eb8;">■</span> 저득점 · 점포있음<br>
       <span style="color:#cccccc;">■</span> 저득점 · 점포없음<br>
       <span style="color:#4d3b2a;">■</span> 출점불가 (교차건물 0개 또는 반경300m상가 0개)<br>
-      <span style="color:#800080;">★</span> 중랑동부시장(임장 대상지)
     </div>
     """
     m.get_root().html.add_child(folium.Element(legend_html))

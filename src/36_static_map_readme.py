@@ -32,22 +32,10 @@ QUADRANT_LABEL = {
 if __name__ == "__main__":
     grid = gpd.read_file("data/processed/jungnang_scored_grid_v4.gpkg", layer="grid")
 
-    trdar = gpd.read_file(
-        "data/raw/서울시 상권분석서비스(영역-상권)/서울시 상권분석서비스(영역-상권).shp"
-    ).to_crs(grid.crs)
-    dongbu = trdar[trdar["TRDAR_CD"].astype(str) == "3130106"]
-    dongbu_centroid = dongbu.geometry.centroid.iloc[0]
-
     fig, ax = plt.subplots(figsize=(10, 10))
     for q, color in QUADRANT_COLOR.items():
         sub = grid[grid["quadrant"] == q]
         sub.plot(ax=ax, color=color, edgecolor="none", linewidth=0)
-
-    ax.plot(dongbu_centroid.x, dongbu_centroid.y, marker="*", markersize=22,
-            color="purple", markeredgecolor="white", markeredgewidth=0.8, zorder=5)
-    ax.annotate("중랑동부시장\n(임장 검증지)", (dongbu_centroid.x, dongbu_centroid.y),
-                xytext=(15, 10), textcoords="offset points", fontsize=11,
-                fontweight="bold", color="purple")
 
     ax.set_axis_off()
     ax.set_title("중랑구 편의점 입지 스코어링 — 최종 결과", fontsize=18, fontweight="bold", pad=15)

@@ -49,10 +49,11 @@ LINE = colors.HexColor("#cccccc")
 S = {
     "title": ParagraphStyle("t", fontName=FH, fontSize=19, leading=24, textColor=NAVY, alignment=TA_CENTER),
     "sub": ParagraphStyle("s", fontName=FB, fontSize=10.5, leading=14, textColor=GRAY, alignment=TA_CENTER),
+    "author": ParagraphStyle("a", fontName=FH, fontSize=11.5, leading=15, textColor=NAVY, alignment=TA_CENTER),
     "summary": ParagraphStyle("sm", fontName=FB, fontSize=10, leading=15.5, textColor=colors.HexColor("#1a1a1a")),
-    "h2": ParagraphStyle("h2", fontName=FH, fontSize=13, leading=16, textColor=NAVY, spaceBefore=2, spaceAfter=5),
+    "h2": ParagraphStyle("h2", fontName=FH, fontSize=13, leading=16, textColor=NAVY, spaceBefore=4, spaceAfter=7),
     "body": ParagraphStyle("b", fontName=FB, fontSize=9.7, leading=14.2, textColor=colors.HexColor("#222222")),
-    "bodysp": ParagraphStyle("bs", fontName=FB, fontSize=9.7, leading=14.2, textColor=colors.HexColor("#222222"), spaceAfter=4),
+    "bodysp": ParagraphStyle("bs", fontName=FB, fontSize=9.7, leading=14.2, textColor=colors.HexColor("#222222"), spaceAfter=7),
     "statnum": ParagraphStyle("sn", fontName=FH, fontSize=17, leading=19, textColor=RED, alignment=TA_CENTER),
     "statlbl": ParagraphStyle("sl", fontName=FB, fontSize=8, leading=10.5, textColor=GRAY, alignment=TA_CENTER),
     "cap": ParagraphStyle("c", fontName=FB, fontSize=8, leading=11, textColor=GRAY, alignment=TA_CENTER),
@@ -153,7 +154,7 @@ def metric_row():
     cells = [
         card("46.4%", "Top20% 적중률", "실제 매출 상위 20% 상권 중 46.4%를 모델도 상위권으로 지목. 무작위(20%)보다 <b>2.3배</b> 정확."),
         card("0.312", "순위 일치도(스피어만)", "실제 매출 순위와 예측 순위의 일치 정도(0=무작위, 1=완벽). 위치 정보만으로 '상대적 우열'을 유의미하게 구분."),
-        card("전용화", "순위 스코어링 용도", "학습 R²(0.54)과 테스트 R²(0.02) 격차가 커, 절대 금액 예측 대신 <b>순위 매기기 전용</b>으로 용도를 못박음."),
+        card("설계 의도", "순위 스코어링", "절대 매출액 예측이 아닌, <b>후보지 간 상대 우열을 비교하는 '순위 산출'</b>에 집중하도록 처음부터 설계함."),
     ]
     t = Table([cells], colWidths=[57 * mm] * 3)
     t.setStyle(TableStyle([
@@ -251,8 +252,8 @@ def _hex(c):
 
 
 def narrative_flowables():
-    title_base = ParagraphStyle("nt", fontName=FH, fontSize=9.8, leading=13, spaceBefore=3, spaceAfter=1)
-    body = ParagraphStyle("nb", fontName=FB, fontSize=9.2, leading=13.3, textColor=colors.HexColor("#222222"), spaceAfter=6)
+    title_base = ParagraphStyle("nt", fontName=FH, fontSize=9.8, leading=13, spaceBefore=6, spaceAfter=2)
+    body = ParagraphStyle("nb", fontName=FB, fontSize=9.2, leading=13.3, textColor=colors.HexColor("#222222"), spaceAfter=8)
     out = []
     for title, color, text in NARRATIVES:
         out.append(Paragraph(f'<font color="{_hex(color)}">{title}</font>', title_base))
@@ -280,13 +281,15 @@ if __name__ == "__main__":
     # ===== 페이지 1: 한눈 요약 + 결과 + 무엇을·왜 (첫 장에서 완결) =====
     st.append(Paragraph("편의점 최적입지 스코어링 및 현장 검증", S["title"]))
     st.append(Paragraph("서울 공공데이터 기반 · 중랑구 100m 격자 분석 · 개인 프로젝트", S["sub"]))
-    st.append(Spacer(1, 8))
+    st.append(Spacer(1, 5))
+    st.append(Paragraph("김현우", S["author"]))
+    st.append(Spacer(1, 10))
     st.append(summary_box())
-    st.append(Spacer(1, 13))
+    st.append(Spacer(1, 14))
 
     st.append(h2("프로젝트 결과"))
     # 제목·범례 없는 컴팩트 지도를 원본 비율(세로/가로 1.297) 그대로 삽입 — 왜곡 방지 (범례는 아래 캡션이 담당)
-    _hw = 92 * mm
+    _hw = 88 * mm
     hero = Image("outputs/36_hero_for_pdf.png", width=_hw, height=_hw * 1.297)
     hero.hAlign = "CENTER"
     st.append(hero)
@@ -311,7 +314,7 @@ if __name__ == "__main__":
     # ===== 페이지 2: 어떻게 했나 + 모델 성능(의미+개선 과정) =====
     st.append(h2("어떻게 했나"))
     st.append(pipeline_row())
-    st.append(Spacer(1, 8))
+    st.append(Spacer(1, 11))
     st.append(Paragraph(
         "· <b>데이터</b>: 서울열린데이터광장·소상공인시장진흥공단·국가데이터처의 공공데이터 9종과, 유동인구 결합의 "
         "정확도를 위해 SGIS(통계지리정보서비스)의 승인 집계구 경계를 추가로 확보해 사용.", S["bodysp"]))
@@ -321,11 +324,11 @@ if __name__ == "__main__":
     st.append(Paragraph(
         "· <b>출점불가 마스킹</b>: 건물과 상가가 모두 없는 격자(도로·하천·산지·공원)를 걸러, 점수가 높아도 "
         "실제로는 출점이 불가능한 곳을 후보에서 제외.", S["body"]))
-    st.append(Spacer(1, 13))
+    st.append(Spacer(1, 18))
 
     st.append(h2("모델 성능 — 숫자의 의미"))
     st.append(metric_row())
-    st.append(Spacer(1, 13))
+    st.append(Spacer(1, 18))
 
     st.append(h2("모델을 3번 고쳐 만든 최종안"))
     st.append(Paragraph(
@@ -333,7 +336,7 @@ if __name__ == "__main__":
         "원인을 진단해, '점포당 매출로 타깃을 바꾼 것'이 문제였고 '집객시설 피처 추가'는 도움이 됐음을 밝혀 최적 조합(v3a)을 확정했습니다.",
         S["bodysp"]))
     st.append(compare_table())
-    st.append(Spacer(1, 12))
+    st.append(Spacer(1, 18))
 
     # 현장 검증 '판정 요약표'를 2페이지 하단으로 (상세 서술은 3페이지로 이어짐)
     st.append(h2("현장 검증: 모델을 직접 걸어서 확인하다"))
@@ -350,7 +353,7 @@ if __name__ == "__main__":
     st.append(h2("케이스별 답사 상세"))
     for f in narrative_flowables():
         st.append(f)
-    st.append(Spacer(1, 6))
+    st.append(Spacer(1, 12))
     st.append(photo_pair())
 
     st.append(PageBreak())
@@ -364,7 +367,7 @@ if __name__ == "__main__":
         "구분하지 못합니다. 이 한계는 데이터만 봐서는 드러나지 않았고, 직접 걸어봤기에 규명할 수 있었습니다. "
         "<b>모델을 신뢰하되 맹신하지 않고, 정량 분석과 현장 검증을 함께 쓰는 것</b>이 이 프로젝트의 결론이자 태도입니다.",
         S["body"]))
-    st.append(Spacer(1, 12))
+    st.append(Spacer(1, 22))
 
     st.append(h2("나의 역할과 프로젝트의 성장"))
     st.append(Paragraph(
@@ -377,7 +380,7 @@ if __name__ == "__main__":
         "원인을 <b>타깃 변경과 피처 추가로 분리 실험</b>해 진짜 원인을 짚었으며, 지도에서 산지에 후보지가 몰린 것을 "
         "<b>눈으로 발견</b>해 마스킹 규칙을 고쳐 오탐을 걸러냈습니다. AI가 준 결과를 그대로 받지 않고 <b>'왜 그런지 되묻고 "
         "검증하는 것'</b>이 제 역할이었습니다.", S["body"]))
-    st.append(Spacer(1, 12))
+    st.append(Spacer(1, 22))
 
     st.append(h2("확장 방향"))
     st.append(Paragraph(
@@ -386,7 +389,7 @@ if __name__ == "__main__":
         "· 건물 용도·임대 정보를 결합해 '물리적 출점 가능성'을 더 정교하게 판정.", S["bodysp"]))
     st.append(Paragraph(
         "· 다른 자치구로 스코어링 확장, 임장 결과를 라벨로 되먹여 재학습(active learning).", S["body"]))
-    st.append(Spacer(1, 12))
+    st.append(Spacer(1, 22))
 
     st.append(h2("데이터 출처 및 라이선스"))
     st.append(Paragraph(
@@ -394,7 +397,7 @@ if __name__ == "__main__":
         "취득했으며, 재사용 시 SGIS 출처 표기가 필요합니다. 그 외 데이터는 <b>서울열린데이터광장, 국가데이터처, "
         "소상공인시장진흥공단</b>이 공개한 공공데이터를 사용했습니다.", S["body"]))
 
-    st.append(Spacer(1, 14))
+    st.append(Spacer(1, 20))
     st.append(HRFlowable(width="100%", thickness=0.6, color=LINE))
     st.append(Spacer(1, 5))
     st.append(Paragraph(

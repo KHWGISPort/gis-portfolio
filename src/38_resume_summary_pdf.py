@@ -218,6 +218,48 @@ def verdict_table():
     return t
 
 
+# 케이스별 상세 답사 기록 (사용자 현장 소견 원문)
+NARRATIVES = [
+    ("1위 · 상봉역 1~2번 출구 (상봉동) — 적중", GREEN,
+     "초역세권이지만 개찰구 밖에는 편의점이 없어, 환승객과 역세권 생활인구가 미포섭 상태였다. 역 내부 storyway "
+     "한 곳이 전부였고 외부 고정 상권도 약해 신규 진입 여지가 있다고 판단했다. 5-6시 관찰 당시 7호선 거주 배후의 "
+     "퇴근 인파가 빠르게 오갔고, 군것질·컵라면 등 역 자체 수요는 충분해 보였다. 다만 2번 출구 쪽 역-건물 간 병목 "
+     "구간이 있어 외부 매대 운영에는 민원·충돌 리스크가 있다고 봤다."),
+    ("3위 · 타임호프 인근 (면목동) — 조건부 적중", AMBER,
+     "골목 상권이나 사거리 인근에 교회 둘·음식점 셋이 있고, 10분간 20명 넘게 오간 유효 상권이었다. 관찰된 "
+     "유동인구는 대부분 고령층. 바로 옆 무인 할인마트가 경쟁 요소이나, 직접 들어가 보니 가격 경쟁력이 낮고 "
+     "담배·로또 취급이 없었으며 어르신들이 무인 기계를 어려워하고 있었다. 유인 편의점이라면 이 취급 공백과 "
+     "응대에서 차별화 여지가 있다고 판단했다."),
+    ("8위 · 상봉 먹자골목 (상봉동) — 수요는 있으나 진입 난항", SLATE,
+     "고깃집·술집 중심의 조성된 먹자골목으로, 흡연 인구가 많고 숙취해소제·주류 수요가 뚜렷해 입지 조건 자체는 "
+     "좋았다. 그러나 빠질 점포를 찾기 어려운 만실 상권이었고, 인근 위반건축물이 다수 존재해 \"벌금을 월세처럼 "
+     "감수하며 버틸 만큼\" 자리가 귀하다는 방증으로 읽혔다. 답사 후 격자 위치를 재확인해 실제 후보지가 더 안쪽 "
+     "길목이었음을 스스로 교정했고, 로드뷰로 재검증한 결과 결론은 동일했다."),
+    ("2위 · 금강사거리 (면목동) — 위양성", RED,
+     "모델이 높게 본 유동인구는 인접 초등학교(면남초)에서 비롯된 착시로 판단했다. 목요일 오후 실제 유동은 거의 "
+     "없었고(흡연 중인 회사원과 노인 한 명), 재개발 현수막과 곳곳의 공실이 보이는 노후 주거지였다. 사거리 전체가 "
+     "경사에 걸쳐 물류 진입도 불리했다. 데이터상 점수와 현장 활력의 괴리를 확인한 대표 사례다."),
+    ("9위 · 진로아파트 — 위양성", RED,
+     "고득점 격자가 아파트 단지 내부여서, 입지 자체는 좋으나 물리적 설치 가능성이 지극히 낮았다. 다만 단지 안에 "
+     "순대·돈까스 노점이 열려 있었는데, 이는 주민이 '단지 안 소비'에 익숙하다는 신호로 해석했다. 인근 홈플러스 "
+     "폐점이라는 거시적 공백까지 겹치면 잠재 수요는 있다고 봤다."),
+]
+
+
+def _hex(c):
+    return "#%02x%02x%02x" % (int(c.red * 255), int(c.green * 255), int(c.blue * 255))
+
+
+def narrative_flowables():
+    title_base = ParagraphStyle("nt", fontName=FH, fontSize=9.8, leading=13, spaceBefore=3, spaceAfter=1)
+    body = ParagraphStyle("nb", fontName=FB, fontSize=9.2, leading=13.3, textColor=colors.HexColor("#222222"), spaceAfter=6)
+    out = []
+    for title, color, text in NARRATIVES:
+        out.append(Paragraph(f'<font color="{_hex(color)}">{title}</font>', title_base))
+        out.append(Paragraph(text, body))
+    return out
+
+
 def photo_pair():
     p1 = Image("docs/fieldwork/photos/01_상봉역_05.jpg", width=82 * mm, height=61.5 * mm)
     p2 = Image("docs/fieldwork/photos/09_진로아파트_02.jpg", width=82 * mm, height=61.5 * mm)
@@ -291,10 +333,9 @@ if __name__ == "__main__":
         "원인을 진단해, '점포당 매출로 타깃을 바꾼 것'이 문제였고 '집객시설 피처 추가'는 도움이 됐음을 밝혀 최적 조합(v3a)을 확정했습니다.",
         S["bodysp"]))
     st.append(compare_table())
+    st.append(Spacer(1, 12))
 
-    st.append(PageBreak())
-
-    # ===== 페이지 3: 현장 검증 + 통찰 + 성장 =====
+    # 현장 검증 '판정 요약표'를 2페이지 하단으로 (상세 서술은 3페이지로 이어짐)
     st.append(h2("현장 검증: 모델을 직접 걸어서 확인하다"))
     st.append(Paragraph("상위 후보 10곳 중 5곳을 직접 답사해, 모델의 판단과 현장을 대조했습니다.", S["bodysp"]))
     st.append(verdict_table())
@@ -302,10 +343,19 @@ if __name__ == "__main__":
     st.append(Paragraph(
         "* <b>8위 '진입 불가'는 모델 오류가 아닙니다.</b> 모델 점수는 정확했으나(수요 있음) 빈 점포가 없어 실제 진입만 불가한 경우로, "
         "모델이 틀린 <b>위양성(2·9위)과는 구분</b>됩니다.", S["small"]))
-    st.append(Spacer(1, 8))
-    st.append(photo_pair())
-    st.append(Spacer(1, 10))
 
+    st.append(PageBreak())
+
+    # ===== 페이지 3: 케이스별 답사 상세 + 사진 =====
+    st.append(h2("케이스별 답사 상세"))
+    for f in narrative_flowables():
+        st.append(f)
+    st.append(Spacer(1, 6))
+    st.append(photo_pair())
+
+    st.append(PageBreak())
+
+    # ===== 페이지 4: 핵심 통찰 + 역할·성장 + 데이터 출처 =====
     st.append(h2("핵심 통찰 — 한계를 현장으로 규명하다"))
     st.append(Paragraph(
         "5곳 중 완전 적중은 1곳이었지만, 이 결과가 오히려 프로젝트의 핵심입니다. 모델은 <b>'상권 매출'로 학습됐기에 "
@@ -314,7 +364,7 @@ if __name__ == "__main__":
         "구분하지 못합니다. 이 한계는 데이터만 봐서는 드러나지 않았고, 직접 걸어봤기에 규명할 수 있었습니다. "
         "<b>모델을 신뢰하되 맹신하지 않고, 정량 분석과 현장 검증을 함께 쓰는 것</b>이 이 프로젝트의 결론이자 태도입니다.",
         S["body"]))
-    st.append(Spacer(1, 10))
+    st.append(Spacer(1, 12))
 
     st.append(h2("나의 역할과 프로젝트의 성장"))
     st.append(Paragraph(
@@ -327,11 +377,30 @@ if __name__ == "__main__":
         "원인을 <b>타깃 변경과 피처 추가로 분리 실험</b>해 진짜 원인을 짚었으며, 지도에서 산지에 후보지가 몰린 것을 "
         "<b>눈으로 발견</b>해 마스킹 규칙을 고쳐 오탐을 걸러냈습니다. AI가 준 결과를 그대로 받지 않고 <b>'왜 그런지 되묻고 "
         "검증하는 것'</b>이 제 역할이었습니다.", S["body"]))
-
     st.append(Spacer(1, 12))
+
+    st.append(h2("확장 방향"))
+    st.append(Paragraph(
+        "· 산지·비상업지역을 포함한 학습 데이터 보강으로 모델의 외삽 한계(빈자리 오판)를 완화.", S["bodysp"]))
+    st.append(Paragraph(
+        "· 건물 용도·임대 정보를 결합해 '물리적 출점 가능성'을 더 정교하게 판정.", S["bodysp"]))
+    st.append(Paragraph(
+        "· 다른 자치구로 스코어링 확장, 임장 결과를 라벨로 되먹여 재학습(active learning).", S["body"]))
+    st.append(Spacer(1, 12))
+
+    st.append(h2("데이터 출처 및 라이선스"))
+    st.append(Paragraph(
+        "집계구 경계 데이터(<b>bnd_oa_11_2016_4Q, 2015_4Q</b>)는 <b>SGIS(통계지리정보서비스)</b>에서 자료 신청·승인을 받아 "
+        "취득했으며, 재사용 시 SGIS 출처 표기가 필요합니다. 그 외 데이터는 <b>서울열린데이터광장, 국가데이터처, "
+        "소상공인시장진흥공단</b>이 공개한 공공데이터를 사용했습니다.", S["body"]))
+
+    st.append(Spacer(1, 14))
     st.append(HRFlowable(width="100%", thickness=0.6, color=LINE))
     st.append(Spacer(1, 5))
-    st.append(Paragraph("전체 코드 · 데이터 명세 · 상세 검증 기록 →  github.com/KHWGISPort/gis-portfolio", S["foot"]))
+    st.append(Paragraph(
+        '전체 코드 · 데이터 명세 · 상세 검증 기록 →  '
+        '<a href="https://github.com/KHWGISPort/gis-portfolio/tree/master"><u>https://github.com/KHWGISPort/gis-portfolio</u></a>',
+        S["foot"]))
 
     doc.build(st)
     print(f"저장 완료: {out}")
